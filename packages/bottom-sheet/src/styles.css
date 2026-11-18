@@ -58,6 +58,10 @@
 [data-ybs-root][data-ybs-glide] [data-ybs-scroller] { scroll-snap-type: none; }
 [data-ybs-track] { position: relative; }
 [data-ybs-spacer] { height: var(--ybs-h, 100dvh); touch-action: none; }
+/* A closing sheet still covers the page; a touch that lands on it must not drag it back up (set before the touch, so
+   no non-passive touchmove listener; a finger already down keeps the touch-action it started with). */
+[data-ybs-root][data-ybs-closing] [data-ybs-scroller],
+[data-ybs-root][data-ybs-closing] [data-ybs-scroller] * { touch-action: none !important; }
 [data-ybs-markers] { position: absolute; top: 0; left: 0; width: 1px; height: 0; }
 [data-ybs-marker] {
   position: absolute; left: 0; width: 1px; height: 1px;

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Touching the page right after closing a sheet could drag the sheet back up and make its close animation jump
+  (reported on iPhones): the closing sheet still covers the page until it's gone, so the swipe moved it. A touch that
+  lands on a closing sheet no longer moves it or holds up the close. Based on a report and PR by hviksten (#14).
+
 ## 0.7.2 (2026-11-13)
 
 ### Fixed

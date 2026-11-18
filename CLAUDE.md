@@ -235,6 +235,12 @@ controller's `closing` flag): a touch doesn't stop the glide, and a wheel or hea
 to rest short of closed while closing (a finger kept dragging after the glide reached 0, a header drag already running
 when `close()` came), it carries on to closed once the finger lifts. A wheel used to step a closing sheet back up, and a
 touch could leave it at a detent, both on screen with `open=false` and impossible to close normally.
+A touch that *lands* on a closing sheet (Venga, iPhone: the next swipe on the "page" dragged the closing sheet back
+up, the glide jumped) can't move it: `[data-ybs-closing]` sets `touch-action: none` on the scroller and everything in it
+(CSS, decided before the touch; PR #14 used a permanent non-passive touchmove listener, which makes every sheet scroll
+wait for the main thread in Chrome), and `onTouchStart` ignores it (not `touching`, so the close finishes under it). A
+finger already down when the close began keeps its touch-action and still counts. Test: "a swipe up while the sheet is
+closing does not drag it back open" (on main it rose 402 -> 415 mid-close). Not yet on a device.
 Reopening during the close moves focus into the sheet again (the page was released and re-made inert), and
 `returnFocus` is kept until unmount so the final close restores it.
 A header drag listens for its release on the window: a mouse that left the header before its first move released

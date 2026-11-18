@@ -1159,6 +1159,27 @@ test('a touch held while the sheet finishes closing still lets it close', async 
   await expect(page.locator('#root')).not.toHaveAttribute('inert')
 })
 
+// Venga (iPhone): right after closing a sheet, the next swipe on the "page" landed on the closing sheet's scroller
+// (it covers the screen until the close finishes) and dragged the sheet back up before the page would scroll.
+test('a swipe up while the sheet is closing does not drag it back open', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'CDP touch')
+  await openLab(page)
+  await page.evaluate(() => {
+    const s = document.querySelector('[data-ybs-scroller]')!
+    const w = window as unknown as { tops: number[] }
+    w.tops = []
+    s.addEventListener('scroll', () => w.tops.push(s.scrollTop))
+  })
+  const cdp = await page.context().newCDPSession(page)
+  await page.mouse.click(40, 120) // tap outside: starts closing
+  await cdp.send('Input.synthesizeScrollGesture', { x: 200, y: 750, yDistance: -300, speed: 1500, gestureSourceType: 'touch' })
+  await waitForEvent(page, 'lab: onOpenChange false')
+  await expect(page.locator('[data-ybs-root]')).toHaveCount(0)
+  const tops = await page.evaluate(() => (window as unknown as { tops: number[] }).tops)
+  const rises = tops.filter((t, i) => i > 0 && t > tops[i - 1] + 0.5)
+  expect(rises, `scrollTop rose while closing: ${tops.map(Math.round).join(' ')}`).toEqual([])
+})
+
 // A real iPhone (Venga) left a flicked-down sheet resting part-way, page blocked, until the next tap: a scroll that
 // ends after the finger lifted is only settled by scrollend. Here no scrollend reaches the sheet at all.
 test('a fling down closes the sheet even if the browser sends no scrollend', async ({ page, browserName }) => {

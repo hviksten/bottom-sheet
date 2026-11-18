@@ -165,6 +165,10 @@ export function createSheetController(els: SheetElements, options: SheetControll
   // close() was called and the sheet is on its way out. Input doesn't stop it (a wheel or drag would otherwise leave
   // a sheet the app already considers closed on screen), and a non-dismissible sheet gets `closed` back as a stop.
   let closing = false
+  function setClosing(v: boolean) {
+    closing = v
+    root.toggleAttribute('data-ybs-closing', v)
+  }
   const closable = () => dismissible || closing
 
   // layout
@@ -523,7 +527,7 @@ export function createSheetController(els: SheetElements, options: SheetControll
       else if (fallMin < fallFrom - 8 && fallMin < pos(floor()) / 2 && st > fallMin + 2 && st > CLOSED_TOLERANCE) {
         dbg(`flick turned back up at ${st.toFixed(2)} after falling to ${fallMin.toFixed(2)}: closing`)
         fallFrom = null
-        closing = true
+        setClosing(true)
         scrollToDetent('closed')
         return
       }
@@ -735,12 +739,13 @@ export function createSheetController(els: SheetElements, options: SheetControll
 
   function onTouchStart() {
     cancelPull()
+    // A touch that lands on a closing sheet is the user going back to the page (the closing layer still covers it):
+    // it can't move the sheet ([data-ybs-closing] sets touch-action: none) and doesn't hold the close until it lifts.
+    // A finger that was already down when the close began still counts (see onTouchEnd).
+    if (closing) return
     touching = true
     anchor = null
     fallFrom = null
-    // A sheet on its way to closed finishes closing under a finger (it was closed on purpose; the closing layer
-    // still takes touches). The finger-lift check below completes the close. Any other glide stops where it is.
-    if (closing) return
     stopGlide()
     programmatic = false
     unlock()
@@ -1189,7 +1194,7 @@ export function createSheetController(els: SheetElements, options: SheetControll
     isOpen = false
     current = null
     emitted = null
-    closing = false
+    setClosing(false)
     releaseHtml()
     options.onClosed?.()
   }
@@ -1225,14 +1230,14 @@ export function createSheetController(els: SheetElements, options: SheetControll
       if (isOpen) {
         // already open (e.g. re-opened during the close animation)
         if (closing) {
-          closing = false
+          setClosing(false)
           layout()
         }
         scrollToDetent(detent ?? floor())
         return
       }
       isOpen = true
-      closing = false
+      setClosing(false)
       pageY = window.scrollY
       keyboard = false
       if (modal && !htmlLocked) {
@@ -1256,7 +1261,7 @@ export function createSheetController(els: SheetElements, options: SheetControll
     close() {
       if (!isOpen) return
       if (!closing) {
-        closing = true
+        setClosing(true)
         if (!dismissible) layout()
       }
       if (scroller.scrollTop <= CLOSED_TOLERANCE) finishClose()
